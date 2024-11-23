@@ -23,8 +23,8 @@ jobs:
       - name: Setup Arduino CLI
         run: |
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
-          echo "/home/runner/work/csad2125ki406maksumchukks09/bin" >> $GITHUB_PATH
-          export PATH=$PATH:/home/runner/work/csad2125ki406maksumchukks09/bin
+          echo "/home/runner/work/csad2125ki406maksumchukks09/csad2125ki406maksumchukks09/bin" >> $GITHUB_PATH
+          export PATH=$PATH:/home/runner/work/csad2125ki406maksumchukks09/csad2125ki406maksumchukks09/bin
           arduino-cli config init
           arduino-cli core update-index
           arduino-cli core install arduino:avr
