@@ -41,13 +41,13 @@ class TestSerialApp(unittest.TestCase):
         mock_serial.return_value = mock_serial_instance
         
         # Execute
-        self.app.port_combobox.set('COM1')
+        self.app.port_combobox.set('COM3')
         self.app.connect_serial()
         
         # Assert
         self.assertTrue(self.app.is_connected)
         self.assertEqual(self.app.connect_button['text'], 'Disconnect')
-        mock_serial.assert_called_once_with('COM1', baudrate=115200, timeout=1)
+        mock_serial.assert_called_once_with('COM3', baudrate=9600, timeout=1)
 
     @patch('serial.Serial')
     def test_connect_serial_failure(self, mock_serial):
@@ -56,7 +56,7 @@ class TestSerialApp(unittest.TestCase):
         mock_serial.side_effect = serial.SerialException("Connection failed")
         
         # Execute
-        self.app.port_combobox.set('COM1')
+        self.app.port_combobox.set('COM3')
         self.app.connect_serial()
         
         # Assert
@@ -84,7 +84,7 @@ class TestSerialApp(unittest.TestCase):
         # Setup
         mock_serial_instance = Mock()
         mock_serial.return_value = mock_serial_instance
-        self.app.port_combobox.set('COM1')
+        self.app.port_combobox.set('COM3')
         self.app.connect_serial()
         test_message = "Test message"
         self.app.send_entry.insert(0, test_message)
@@ -129,7 +129,7 @@ class TestSerialApp(unittest.TestCase):
         mock_thread.return_value = mock_thread_instance
         
         # Execute
-        self.app.port_combobox.set('COM1')
+        self.app.port_combobox.set('COM3')
         self.app.connect_serial()
         
         # Assert
