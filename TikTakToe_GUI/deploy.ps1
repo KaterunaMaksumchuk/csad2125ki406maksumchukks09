@@ -1,3 +1,4 @@
+# Обов'язкові параметри BAUD_RATE та порт
 param(
     [Parameter(Mandatory=$true)]
     [string]$COM_PORT,
@@ -122,7 +123,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 
-# Перевірка чи присутні потрібні файли для тестів
+# 4. Перевірка чи присутні потрібні файли для тестів
 Write-Host "Setting up test environment..."
 if (-not (Test-Path ".\tests\__init__.py")) {
     New-Item -ItemType File -Path ".\tests\__init__.py" -Force
@@ -132,13 +133,7 @@ if (-not (Test-Path ".\tests\__init__.py")) {
 # 5. Запуск тестів
 Write-Host "Running tests..."
 & "$VENV_DIR\Scripts\Activate.ps1"
-
 try {
-    # # Create test results directory if it doesn't exist
-    # if (-not (Test-Path $TEST_RESULTS_DIR)) {
-    #     New-Item -ItemType Directory -Path $TEST_RESULTS_DIR -Force | Out-Null
-    # }
-
     # Запуск pytest
     $env:PYTHONPATH = "$CLIENT_DIR"
     $testCommand = "pytest .\tests\test_tictactoe.py -v"
@@ -165,7 +160,7 @@ catch {
 
 deactivate
 
-# 6. Move results folder
+# 6. Переносимо результати в папку Deploy
 Write-Host "Relocating test results..."
 if (Test-Path "results") {
     Move-Item -Path "results\*" -Destination $TEST_RESULTS_DIR -Force

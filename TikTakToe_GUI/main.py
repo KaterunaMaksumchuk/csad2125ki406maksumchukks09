@@ -10,6 +10,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QPalette, QColor
 
 
+
 class TicTacToeGUI(QMainWindow):
     def __init__(self):
         super().__init__()
