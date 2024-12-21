@@ -22,6 +22,9 @@ wheels/
 .installed.cfg
 *.egg
 
+# Папка для розгортання
+deploy/
+
 # Virtual Environment
 venv/
 ENV/

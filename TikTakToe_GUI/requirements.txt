@@ -1,2 +1,8 @@
 pyserial
+<<<<<<< Updated upstream
 pyinstaller
+=======
+pyinstaller
+pyqt5
+pytest
+>>>>>>> Stashed changes
