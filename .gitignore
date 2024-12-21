@@ -22,6 +22,9 @@ wheels/
 .installed.cfg
 *.egg
 
+# Build and deploy
+deploy/
+
 # Virtual Environment
 venv/
 ENV/
@@ -41,3 +44,12 @@ test_reports.txt
 .vscode/
 *.swp
 *.swo
+
+# Keep GitHub workflows
+!.github/
+
+
+# Project specific
+ArduinoLogic/**/build/
+ArduinoLogic/**/*.hex
+ArduinoLogic/**/*.elf

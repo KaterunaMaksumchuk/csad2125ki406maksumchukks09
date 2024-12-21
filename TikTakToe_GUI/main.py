@@ -1,154 +1,543 @@
-import tkinter as tk
-from tkinter import ttk
+import sys
+import configparser
 import serial
 import serial.tools.list_ports
-from threading import Thread
+import os
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout,
+                             QHBoxLayout, QWidget, QComboBox, QLabel, QMessageBox,
+                             QGridLayout)
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QFont, QPalette, QColor
 
 
-class SerialApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Serial Communication")
-        self.serial_connection = None
-        self.is_connected = False
 
-        # Colors for styling
-        bg_color = "#2c3e50"
-        fg_color = "#ecf0f1"
-        accent_color = "#3498db"
+class TicTacToeGUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.init_ui()
+        self.init_game_state()
+        self.init_timers()
+        self.apply_dark_palette()
+        
+        # Set global style for QMessageBox
+        self.setStyleSheet("""
+            QMessageBox {
+                background-color: #2b2b2b;
+                color: #ffffff;
+            }
+            QMessageBox QLabel {
+                color: #ffffff;
+            }
+            QMessageBox QPushButton {
+                background-color: #3b3b3b;
+                border: 1px solid #555;
+                border-radius: 3px;
+                color: #ffffff;
+                min-width: 80px;
+                padding: 5px;
+            }
+            QMessageBox QPushButton:hover {
+                background-color: #454545;
+                border-color: #666;
+            }
+            QMessageBox QPushButton:pressed {
+                background-color: #2a2a2a;
+            }
+        """)
 
-        # Root configuration
-        self.root.configure(bg=bg_color)
 
-        # Terminal output for messages
-        self.terminal = tk.Text(
-            root, state="disabled", width=60, height=20, bg="#1e272e", fg=fg_color
-        )
-        self.terminal.grid(row=0, column=0, columnspan=3, padx=5, pady=10, sticky="ew")
+    def apply_dark_palette(self):
+        # Create and apply dark palette
+        dark_palette = QPalette()
+        
+        # Set color roles
+        dark_palette.setColor(QPalette.Window, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.WindowText, QColor(255, 255, 255))
+        dark_palette.setColor(QPalette.Base, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ToolTipBase, QColor(255, 255, 255))
+        dark_palette.setColor(QPalette.ToolTipText, QColor(255, 255, 255))
+        dark_palette.setColor(QPalette.Text, QColor(255, 255, 255))
+        dark_palette.setColor(QPalette.Button, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ButtonText, QColor(255, 255, 255))
+        dark_palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
+        dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
+        
+        self.setPalette(dark_palette)
 
-        # Frame for controls
-        control_frame = tk.Frame(root, bg=bg_color)
-        control_frame.grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="ew")
+    def init_ui(self):
+        self.setWindowTitle("Tic Tac Toe Game")
+        self.setMinimumSize(500, 600)
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #2b2b2b;
+            }
+            QPushButton {
+                background-color: #3b3b3b;
+                border: 2px solid #555;
+                border-radius: 5px;
+                color: #ffffff;
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: #454545;
+                border-color: #666;
+            }
+            QPushButton:pressed {
+                background-color: #2a2a2a;
+            }
+            QLabel {
+                color: #ffffff;
+                font-size: 12px;
+            }
+            QComboBox {
+                background-color: #3b3b3b;
+                border: 1px solid #555;
+                border-radius: 3px;
+                color: #ffffff;
+                padding: 5px;
+            }
+            QComboBox:drop-down {
+                border: none;
+                background-color: #4b4b4b;
+            }
+            QComboBox::down-arrow {
+                border: none;
+                color: #ffffff;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #3b3b3b;
+                color: #ffffff;
+                selection-background-color: #4b4b4b;
+            }
+        """)
+
+        # Create main widget and layout
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        layout = QVBoxLayout(main_widget)
+        layout.setSpacing(10)
+        layout.setContentsMargins(20, 20, 20, 20)
+
+        # Add connection controls
+        layout.addLayout(self.create_connection_controls())
+
+        # Add status label
+        self.status_label = QLabel("Not Connected")
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setStyleSheet("font-weight: bold; color: #ff4444;")
+        layout.addWidget(self.status_label)
+
+        # Add game mode controls
+        mode_layout = self.create_game_mode_controls()
+        layout.addLayout(mode_layout)
+
+        # Add game board
+        layout.addLayout(self.create_game_board())
+
+        # Add reset button
+        self.reset_btn = QPushButton("Reset Game")
+        self.reset_btn.setStyleSheet("""
+            QPushButton {
+                padding: 10px;
+                font-weight: bold;
+                background-color: #2d5a27;
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: #366c2f;
+            }
+        """)
+        self.reset_btn.clicked.connect(self.reset_game)
+        layout.addWidget(self.reset_btn)
+
+        # Create main widget and layout
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        layout = QVBoxLayout(main_widget)
+        layout.setSpacing(10)
+        layout.setContentsMargins(20, 20, 20, 20)
+
+        # Add connection controls
+        layout.addLayout(self.create_connection_controls())
+
+        # Add status label
+        self.status_label = QLabel("Not Connected")
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setStyleSheet("font-weight: bold;")
+        layout.addWidget(self.status_label)
+
+        # Add game mode controls
+        mode_layout = self.create_game_mode_controls()
+        layout.addLayout(mode_layout)
+
+        # Add game board
+        layout.addLayout(self.create_game_board())
+
+        # Add reset button
+        self.reset_btn = QPushButton("Reset Game")
+        self.reset_btn.setStyleSheet("""
+            QPushButton {
+                padding: 10px;
+                font-weight: bold;
+                background-color: #4CAF50;
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        self.reset_btn.clicked.connect(self.reset_game)
+        layout.addWidget(self.reset_btn)
+
+    def create_connection_controls(self):
+        conn_layout = QHBoxLayout()
+        conn_layout.setSpacing(10)
 
         # Port selection
-        self.port_label = ttk.Label(control_frame, text="Select Port:", background=bg_color, foreground=fg_color)
-        self.port_label.grid(row=0, column=0, padx=5, pady=5)
+        self.port_combo = QComboBox()
+        self.refresh_ports()
+        conn_layout.addWidget(QLabel("Port:"))
+        conn_layout.addWidget(self.port_combo)
 
-        self.port_combobox = ttk.Combobox(control_frame, values=self.get_available_ports())
-        self.port_combobox.grid(row=0, column=1, padx=5, pady=5)
+        # Refresh button
+        refresh_btn = QPushButton("🔄")
+        refresh_btn.setToolTip("Refresh Ports")
+        refresh_btn.clicked.connect(self.refresh_ports)
+        conn_layout.addWidget(refresh_btn)
 
-        # Baudrate selection
-        self.baudrate_label = ttk.Label(control_frame, text="Baudrate:", background=bg_color, foreground=fg_color)
-        self.baudrate_label.grid(row=1, column=0, padx=5, pady=5)
-
-        self.baudrate_combobox = ttk.Combobox(
-            control_frame, values=[9600, 19200, 38400, 57600, 115200], state="readonly"
-        )
-        self.baudrate_combobox.set("9600")  # Default baudrate
-        self.baudrate_combobox.grid(row=1, column=1, padx=5, pady=5)
+        # Baud rate selection
+        self.baud_combo = QComboBox()
+        self.baud_combo.addItems(['9600', '19200', '38400', '57600', '115200'])
+        self.config = self.load_config()
+        self.baud_combo.setCurrentText(self.config.get('Serial', 'baud_rate', fallback='9600'))
+        conn_layout.addWidget(QLabel("Baud:"))
+        conn_layout.addWidget(self.baud_combo)
 
         # Connect button
-        self.connect_button = ttk.Button(control_frame, text="Connect", command=self.connect_serial)
-        self.connect_button.grid(row=0, column=2, padx=5, pady=5)
+        self.connect_btn = QPushButton("Connect")
+        self.connect_btn.clicked.connect(self.toggle_connection)
+        conn_layout.addWidget(self.connect_btn)
 
-        # Text entry for sending messages
-        self.send_entry = ttk.Entry(control_frame, width=40)
-        self.send_entry.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+        return conn_layout
 
-        # Send button
-        self.send_button = ttk.Button(control_frame, text="Send", command=self.send_message)
-        self.send_button.grid(row=2, column=2, padx=5, pady=5)
+    def create_game_mode_controls(self):
+        mode_layout = QHBoxLayout()
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItems(['Man vs Man', 'Man vs AI', 'AI vs AI'])
+        self.mode_combo.setCurrentText(self.config.get('Game', 'default_mode', fallback='Man vs Man'))
+        self.mode_combo.currentIndexChanged.connect(self.change_mode)
+        mode_layout.addWidget(QLabel("Game Mode:"))
+        mode_layout.addWidget(self.mode_combo)
+        return mode_layout
 
-    def get_available_ports(self):
-        """List available serial ports."""
-        ports = serial.tools.list_ports.comports()
-        return [port.device for port in ports]
+    def create_game_board(self):
+        board_layout = QGridLayout()
+        board_layout.setSpacing(5)
+        self.board_buttons = []
 
-    def connect_serial(self):
-        """Connect or disconnect from the selected serial port."""
-        if self.is_connected:
-            self.disconnect_serial()
-        else:
-            selected_port = self.port_combobox.get()
-            baudrate = self.baudrate_combobox.get()
+        for i in range(9):
+            btn = QPushButton()
+            btn.setFont(QFont('Arial', 32, QFont.Bold))
+            btn.setFixedSize(100, 100)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #2b2b2b;
+                    border: 2px solid #555;
+                }
+                QPushButton:hover {
+                    background-color: #353535;
+                    border-color: #666;
+                }
+            """)
+            btn.clicked.connect(lambda checked, pos=i: self.make_move(pos))
+            self.board_buttons.append(btn)
+            board_layout.addWidget(btn, i // 3, i % 3)
 
-            if not selected_port:
-                self.log_message("Error: No port selected.")
-                return
+        return board_layout
 
+    def init_game_state(self):
+        self.serial_conn = None
+        self.game_active = True
+
+    def init_timers(self):
+        # Timer for AI moves
+        self.ai_timer = QTimer()
+        self.ai_timer.timeout.connect(self.check_ai_moves)
+
+        # Timer for connection monitoring
+        self.connection_timer = QTimer()
+        self.connection_timer.timeout.connect(self.check_connection)
+        self.connection_timer.start(1000)
+
+    def load_config(self):
+        config = configparser.ConfigParser()
+        try:
+            config.read('tictactoe.ini')
+        except:
+            config['Serial'] = {'baud_rate': '9600'}
+            config['Game'] = {'default_mode': 'Man vs Man'}
+            with open('tictactoe.ini', 'w') as f:
+                config.write(f)
+        return config
+
+    def refresh_ports(self):
+        current_port = self.port_combo.currentText()
+        self.port_combo.clear()
+        ports = [port.device for port in serial.tools.list_ports.comports()]
+        self.port_combo.addItems(ports)
+        if current_port in ports:
+            self.port_combo.setCurrentText(current_port)
+        elif ports:
+            self.port_combo.setCurrentText(ports[0])
+
+    def check_connection(self):
+        try:
+            if self.serial_conn:
+                try:
+                    self.serial_conn.write(b"\n")
+                    self.status_label.setText("Connected")
+                    self.status_label.setStyleSheet("color: green; font-weight: bold;")
+                except:
+                    self.handle_disconnection()
+        except KeyboardInterrupt:
+            self.closeEvent(None)  # Викликаємо метод закриття вікна
+            QApplication.quit()  # Закриваємо додаток
+
+    def handle_disconnection(self):
+        self.serial_conn = None
+        self.connect_btn.setText("Connect")
+        self.connect_btn.setStyleSheet("")
+        self.port_combo.setEnabled(True)
+        self.baud_combo.setEnabled(True)
+        self.status_label.setText("Disconnected")
+        self.status_label.setStyleSheet("color: red; font-weight: bold;")
+        self.ai_timer.stop()
+        self.game_active = True
+
+    def toggle_connection(self):
+        if self.serial_conn is None:
             try:
-                baudrate = int(baudrate)
-                self.serial_connection = serial.Serial(selected_port, baudrate=baudrate, timeout=1)
-                self.is_connected = True
-                self.connect_button.config(text="Disconnect")
-                self.log_message(f"Connected to {selected_port} at {baudrate} baud.")
+                port = self.port_combo.currentText()
+                if not port:
+                    raise ValueError("No port selected")
 
-                # Start a thread to read incoming data
-                self.read_thread = Thread(target=self.read_serial, daemon=True)
-                self.read_thread.start()
-            except serial.SerialException as e:
-                self.log_message(f"Error: Could not open port {selected_port} - {e}")
-            except ValueError:
-                self.log_message("Error: Invalid baud rate selected.")
+                baud = int(self.baud_combo.currentText())
+                self.serial_conn = serial.Serial(port, baud, timeout=1)
+                self.connect_btn.setText("Disconnect")
+                self.connect_btn.setStyleSheet("background-color: #ff4444; color: white;")
+                self.port_combo.setEnabled(False)
+                self.baud_combo.setEnabled(False)
+                self.status_label.setText("Connected")
+                self.status_label.setStyleSheet("color: green; font-weight: bold;")
+                self.reset_game()
 
-    def disconnect_serial(self):
-        """Disconnect the serial connection."""
-        if self.serial_connection and self.serial_connection.is_open:
-            self.serial_connection.close()
-            self.is_connected = False
-            self.connect_button.config(text="Connect")
-            self.log_message("Disconnected from serial port.")
+                if self.mode_combo.currentText() == 'AI vs AI':
+                    self.ai_timer.start(100)
 
-    def send_message(self):
-        """Send a message through the serial port."""
-        if not self.is_connected:
-            self.log_message("Error: Not connected to any port.")
+            except Exception as e:
+                QMessageBox.critical(self, "Connection Error",
+                                     f"Failed to connect: {str(e)}\n"
+                                     f"Please check if the device is connected and the port is correct.")
+                self.serial_conn = None
+        else:
+            self.serial_conn.close()
+            self.handle_disconnection()
+
+    def change_mode(self):
+        if self.serial_conn:
+            mode_map = {'Man vs Man': 1, 'Man vs AI': 2, 'AI vs AI': 3}
+            mode = mode_map[self.mode_combo.currentText()]
+            try:
+                self.serial_conn.write(f"MODE{mode}\n".encode())
+                response = self.serial_conn.readline().decode().strip()
+                if response == "OK:MODE_SET":
+                    self.reset_game()
+                    self.game_active = True
+                    if mode == 3:
+                        self.ai_timer.start(100)
+                    else:
+                        self.ai_timer.stop()
+            except:
+                self.handle_disconnection()
+
+    def make_move(self, position):
+        if not self.serial_conn:
+            QMessageBox.warning(self, "Warning",
+                                "Not connected to Arduino.\nPlease connect first.")
             return
 
-        message = self.send_entry.get()
-        if not message:
-            self.log_message("Error: No message entered.")
+        if not self.game_active:
+            return
+
+        if self.mode_combo.currentText() == 'AI vs AI':
             return
 
         try:
-            self.serial_connection.write(message.encode())
-            self.log_message(f"Sent: {message}")
-            self.send_entry.delete(0, tk.END)
-        except serial.SerialException as e:
-            self.log_message(f"Error: Failed to send message - {e}")
+            self.serial_conn.write(f"MOVE{position}\n".encode())
+            self.process_response()
+        except:
+            self.handle_disconnection()
 
-    def read_serial(self):
-        """Read messages from the serial port."""
-        while self.is_connected:
+
+    def process_response(self):
+        try:
+            response = self.serial_conn.readline().decode().strip()
+            if response.startswith("BOARD:"):
+                parts = response.split(":")
+                board_state = parts[1]
+
+                # Update board buttons with dark theme colors
+                for i, state in enumerate(board_state):
+                    button = self.board_buttons[i]
+                    if state == "0":
+                        button.setText("")
+                        button.setStyleSheet("""
+                            QPushButton {
+                                background-color: #2b2b2b;
+                                border: 2px solid #555;
+                            }
+                            QPushButton:hover {
+                                background-color: #353535;
+                                border-color: #666;
+                            }
+                        """)
+                    elif state == "1":
+                        button.setText("X")
+                        button.setStyleSheet("""
+                            QPushButton {
+                                background-color: #2b2b2b;
+                                border: 2px solid #555;
+                                color: #00ffff;
+                            }
+                            QPushButton:hover {
+                                background-color: #353535;
+                                border-color: #666;
+                            }
+                        """)
+                    else:
+                        button.setText("O")
+                        button.setStyleSheet("""
+                            QPushButton {
+                                background-color: #2b2b2b;
+                                border: 2px solid #555;
+                                color: #ff9500;
+                            }
+                            QPushButton:hover {
+                                background-color: #353535;
+                                border-color: #666;
+                            }
+                        """)
+
+                # Handle game end conditions with custom styled message boxes
+                if "WIN" in response:
+                    winner = "X" if parts[3] == "1" else "O"
+                    msg = QMessageBox(self)
+                    msg.setWindowTitle("Game Over")
+                    msg.setText(f"Player {winner} wins!")
+                    msg.setIcon(QMessageBox.Information)
+                    
+                    # Set custom icon color (if winner is X - cyan, if O - orange)
+                    winner_color = "#00ffff" if winner == "X" else "#ff9500"
+                    msg.setStyleSheet(msg.styleSheet() + f"""
+                        QMessageBox QLabel {{
+                            color: {winner_color};
+                            font-weight: bold;
+                            font-size: 14px;
+                        }}
+                    """)
+                    msg.exec_()
+                    
+                    self.game_active = False
+                    if self.mode_combo.currentText() == 'AI vs AI':
+                        self.ai_timer.stop()
+                elif "DRAW" in response:
+                    msg = QMessageBox(self)
+                    msg.setWindowTitle("Game Over")
+                    msg.setText("It's a draw!")
+                    msg.setIcon(QMessageBox.Information)
+                    msg.setStyleSheet(msg.styleSheet() + """
+                        QMessageBox QLabel {
+                            color: #ffffff;
+                            font-weight: bold;
+                            font-size: 14px;
+                        }
+                    """)
+                    msg.exec_()
+                    
+                    self.game_active = False
+                    if self.mode_combo.currentText() == 'AI vs AI':
+                        self.ai_timer.stop()
+
+            elif response.startswith("ERR:"):
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Game Error")
+                msg.setText(response[4:])
+                msg.setIcon(QMessageBox.Warning)
+                msg.setStyleSheet(msg.styleSheet() + """
+                    QMessageBox QLabel {
+                        color: #ff4444;
+                        font-weight: bold;
+                    }
+                """)
+                msg.exec_()
+        except:
+            self.handle_disconnection()
+
+    
+    def check_ai_moves(self):
+        if self.serial_conn and self.mode_combo.currentText() == 'AI vs AI' and self.game_active:
+            if self.serial_conn.in_waiting:
+                self.process_response()
+
+    def reset_game(self):
+        if self.serial_conn:
             try:
-                # Check if there is data waiting to be read
-                if self.serial_connection and self.serial_connection.is_open and self.serial_connection.in_waiting > 0:
-                    incoming_message = self.serial_connection.readline().decode("utf-8", errors="replace").strip()
-                    if incoming_message:
-                        self.log_message(f"Received: {incoming_message}")
-            except serial.SerialException as e:
-                self.log_message(f"Error: Failed to read from port - {e}")
-                self.disconnect_serial()
-                break
-            except UnicodeDecodeError as e:
-                # Handle decoding errors
-                self.log_message(f"Error: Decoding error - {e}")
-            except Exception as e:
-                # Catch any other exceptions and log them
-                self.log_message(f"Unexpected error: {e}")
-                self.disconnect_serial()
-                break
+                self.serial_conn.write(b"RESET\n")
+                response = self.serial_conn.readline().decode().strip()
+                if response == "OK:RESET":
+                    for btn in self.board_buttons:
+                        btn.setText("")
+                        btn.setStyleSheet("")
+                        btn.setEnabled(True)
+                    self.game_active = True
+                    if self.mode_combo.currentText() == 'AI vs AI':
+                        self.ai_timer.start(100)
+            except:
+                self.handle_disconnection()
+        else:
+            for btn in self.board_buttons:
+                btn.setText("")
+                btn.setStyleSheet("")
+            self.game_active = True
 
-    def log_message(self, message):
-        """Log a message to the terminal output."""
-        self.terminal.config(state="normal")
-        self.terminal.insert(tk.END, message + "\n")
-        self.terminal.see(tk.END)
-        self.terminal.config(state="disabled")
+    def closeEvent(self, event):
+        try:
+            if self.serial_conn:
+                self.serial_conn.close()
+
+            # Save settings
+            self.config['Serial']['baud_rate'] = self.baud_combo.currentText()
+            self.config['Game']['default_mode'] = self.mode_combo.currentText()
+            with open('tictactoe.ini', 'w') as f:
+                self.config.write(f)
+
+            if event:  # Перевіряємо, чи event не None
+                event.accept()
+        except Exception as e:
+            print(f"Error during closing: {e}")
+            if event:
+                event.accept()
 
 
-# Run the app
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = SerialApp(root)
-    root.mainloop()
+if __name__ == '__main__':
+    try:
+        app = QApplication(sys.argv)
+        app.setStyle('Fusion')
+        window = TicTacToeGUI()
+        window.show()
+        sys.exit(app.exec_())
+    except KeyboardInterrupt:
+        print("\nProgram finished correctly")
+        sys.exit(0)

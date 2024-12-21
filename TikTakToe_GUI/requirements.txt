@@ -1,2 +1,4 @@
 pyserial
 pyinstaller
+pyqt5
+pytest
