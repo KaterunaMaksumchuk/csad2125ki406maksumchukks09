@@ -23,7 +23,7 @@ wheels/
 *.egg
 
 # Папка для розгортання
-deploy/
+*/deploy/
 
 # Virtual Environment
 venv/

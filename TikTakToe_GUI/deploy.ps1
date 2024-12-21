@@ -13,7 +13,7 @@ if (-not $COM_PORT -or -not $BAUD_RATE) {
 }
 
 # Шлях до Arduino CLI
-$ARDUINO_CLI = "D:\Programs\arduino-cli_1.1.1_Windows_64bit\arduino-cli.exe"
+$ARDUINO_CLI = "D:\Programs\arduino-cli.exe"
 
 # Перевірка чи Arduino CLI існує
 if (-not (Test-Path $ARDUINO_CLI)) {
