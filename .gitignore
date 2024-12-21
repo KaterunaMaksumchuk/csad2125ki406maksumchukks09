@@ -22,8 +22,8 @@ wheels/
 .installed.cfg
 *.egg
 
-# Папка для розгортання
-*/deploy/
+# Build and deploy
+deploy/
 
 # Virtual Environment
 venv/
@@ -44,3 +44,12 @@ test_reports.txt
 .vscode/
 *.swp
 *.swo
+
+# Keep GitHub workflows
+!.github/
+
+
+# Project specific
+ArduinoLogic/**/build/
+ArduinoLogic/**/*.hex
+ArduinoLogic/**/*.elf
