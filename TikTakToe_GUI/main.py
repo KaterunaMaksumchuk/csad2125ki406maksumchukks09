@@ -1,3 +1,9 @@
+"""
+@defgroup client_side Client Side
+@brief Documentation for the client-side application.
+@{
+"""
+
 import sys
 import configparser
 import serial
@@ -10,8 +16,17 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QPalette, QColor
 
 
-
+##
+# @class TicTacToeGUI
+# @brief Main GUI class for the Tic Tac Toe game.
+#
+# This class creates a graphical user interface for a Tic Tac Toe game with serial connection
+# support to communicate with external hardware (e.g., Arduino).
 class TicTacToeGUI(QMainWindow):
+    ##
+    # @brief Constructor for the TicTacToeGUI class.
+    #
+    # Initializes the UI, game state, and other necessary components.
     def __init__(self):
         super().__init__()
         self.init_ui()
@@ -46,6 +61,8 @@ class TicTacToeGUI(QMainWindow):
         """)
 
 
+    ##
+    # @brief Applies a dark theme palette to the application.
     def apply_dark_palette(self):
         # Create and apply dark palette
         dark_palette = QPalette()
@@ -66,6 +83,10 @@ class TicTacToeGUI(QMainWindow):
         
         self.setPalette(dark_palette)
 
+    ##
+    # @brief Initializes the UI components.
+    #
+    # Creates the main layout, widgets, and styles for the application.
     def init_ui(self):
         self.setWindowTitle("Tic Tac Toe Game")
         self.setMinimumSize(500, 600)
@@ -191,6 +212,10 @@ class TicTacToeGUI(QMainWindow):
         self.reset_btn.clicked.connect(self.reset_game)
         layout.addWidget(self.reset_btn)
 
+    ##
+    # @brief Creates the connection control layout.
+    #
+    # @return QHBoxLayout containing port selection, baud rate, and connection button.
     def create_connection_controls(self):
         conn_layout = QHBoxLayout()
         conn_layout.setSpacing(10)
@@ -222,6 +247,11 @@ class TicTacToeGUI(QMainWindow):
 
         return conn_layout
 
+
+    ##
+    # @brief Creates the game mode control layout.
+    #
+    # @return QHBoxLayout containing game mode selection.
     def create_game_mode_controls(self):
         mode_layout = QHBoxLayout()
         self.mode_combo = QComboBox()
@@ -232,6 +262,11 @@ class TicTacToeGUI(QMainWindow):
         mode_layout.addWidget(self.mode_combo)
         return mode_layout
 
+
+    ##
+    # @brief Creates the Tic Tac Toe game board.
+    #
+    # @return QGridLayout containing the game board buttons.
     def create_game_board(self):
         board_layout = QGridLayout()
         board_layout.setSpacing(5)
@@ -257,10 +292,14 @@ class TicTacToeGUI(QMainWindow):
 
         return board_layout
 
+    ##
+    # @brief Initializes the game state variables.
     def init_game_state(self):
         self.serial_conn = None
         self.game_active = True
 
+    ##
+    # @brief Initializes the timers for AI moves and connection monitoring.
     def init_timers(self):
         # Timer for AI moves
         self.ai_timer = QTimer()
@@ -271,6 +310,10 @@ class TicTacToeGUI(QMainWindow):
         self.connection_timer.timeout.connect(self.check_connection)
         self.connection_timer.start(1000)
 
+    ##
+    # @brief Loads the application configuration from a file.
+    #
+    # @return ConfigParser object containing the configuration.
     def load_config(self):
         config = configparser.ConfigParser()
         try:
@@ -531,7 +574,14 @@ class TicTacToeGUI(QMainWindow):
                 event.accept()
 
 
+"""
+@}
+"""
+
 if __name__ == '__main__':
+    """
+    @brief Main entry point for the application.
+    """
     try:
         app = QApplication(sys.argv)
         app.setStyle('Fusion')
